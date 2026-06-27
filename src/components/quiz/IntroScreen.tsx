@@ -1,6 +1,16 @@
+import { useEffect } from "react";
+
+function fbq(...args: any[]) {
+  if (typeof window !== "undefined" && (window as any).fbq) (window as any).fbq(...args);
+}
+
 type Props = { onStart: () => void };
 
 export function IntroScreen({ onStart }: Props) {
+  useEffect(() => {
+    fbq("track", "ViewContent", { content_name: "Quiz — Mapa da Identidade Homossexual" });
+  }, []);
+
   return (
     <div className="w-full text-center">
       <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-6">
