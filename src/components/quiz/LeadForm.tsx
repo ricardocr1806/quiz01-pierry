@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sendLead } from "@/lib/lead-webhook";
 
 export type Lead = { name: string; email: string; whatsapp: string };
 
@@ -38,24 +39,8 @@ function isValidBRPhone(raw: string) {
   return true;
 }
 
-const WEBHOOK_URL = "https://falume.com.br/api/webhooks/lead/lf_5e20241321c0cb73f96cf402b8c3340eb78a";
-
 function fbq(...args: any[]) {
   if (typeof window !== "undefined" && (window as any).fbq) (window as any).fbq(...args);
-}
-
-function sendToWebhook(lead: Lead, flow: string) {
-  fetch(WEBHOOK_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: lead.name,
-      email: lead.email,
-      phone: lead.whatsapp,
-      tags: [flow === "flow1" ? "quiz-pais" : "quiz-filhos"],
-      source: "quiz-mapa-identidade",
-    }),
-  }).catch(() => {});
 }
 
 export function LeadForm({ flow, onSubmit }: Props) {
@@ -82,7 +67,7 @@ export function LeadForm({ flow, onSubmit }: Props) {
           setTouched(true);
           if (valid) {
             const lead = { name: name.trim(), email: email.trim(), whatsapp: whatsapp.trim() };
-            sendToWebhook(lead, flow ?? "flow2");
+            sendLead({ data: { name: lead.name, email: lead.email, phone: lead.whatsapp, flow: flow ?? "flow2" } }).catch(() => {});
             fbq("track", "Lead", { content_name: "Quiz — Mapa da Identidade Homossexual" });
             onSubmit(lead);
           }
