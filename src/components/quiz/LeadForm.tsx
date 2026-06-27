@@ -40,6 +40,10 @@ function isValidBRPhone(raw: string) {
 
 const WEBHOOK_URL = "https://falume.com.br/api/webhooks/lead/lf_5e20241321c0cb73f96cf402b8c3340eb78a";
 
+function fbq(...args: any[]) {
+  if (typeof window !== "undefined" && (window as any).fbq) (window as any).fbq(...args);
+}
+
 function sendToWebhook(lead: Lead, flow: string) {
   fetch(WEBHOOK_URL, {
     method: "POST",
@@ -79,6 +83,7 @@ export function LeadForm({ flow, onSubmit }: Props) {
           if (valid) {
             const lead = { name: name.trim(), email: email.trim(), whatsapp: whatsapp.trim() };
             sendToWebhook(lead, flow ?? "flow2");
+            fbq("track", "Lead", { content_name: "Quiz — Mapa da Identidade Homossexual" });
             onSubmit(lead);
           }
         }}
