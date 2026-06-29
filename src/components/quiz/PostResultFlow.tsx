@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { trackStep } from "@/lib/analytics";
 
 function fbq(...args: any[]) {
   if (typeof window !== "undefined" && (window as any).fbq) (window as any).fbq(...args);
@@ -689,7 +690,7 @@ function FinalPitch({ flow, name, onRestart }: { flow: Flow; name: string; onRes
             href="https://pay.assiny.com.br/1d926e/node/3fZr7o"
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => fbq("track", "InitiateCheckout", { value: 19.90, currency: "BRL", content_name: "De Frente com a Homossexualidade" })}
+            onClick={() => { fbq("track", "InitiateCheckout", { value: 19.90, currency: "BRL", content_name: "De Frente com a Homossexualidade" }); trackStep({ data: { step: "8_checkout_click" } }).catch(() => {}); }}
             className="block w-full py-4 rounded-full font-bold text-white text-base sm:text-lg shadow-2xl transition-transform hover:-translate-y-0.5 text-center"
             style={{ background: "var(--gradient-rainbow-no-red)" }}
           >
