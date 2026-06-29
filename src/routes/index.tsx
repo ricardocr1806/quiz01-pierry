@@ -12,6 +12,7 @@ import { IntroScreen } from "@/components/quiz/IntroScreen";
 import { LeadForm, type Lead } from "@/components/quiz/LeadForm";
 import { PostResultFlow } from "@/components/quiz/PostResultFlow";
 import { trackStep } from "@/lib/analytics";
+import { captureUtms } from "@/lib/utm";
 
 
 export const Route = createFileRoute("/")({
@@ -49,7 +50,7 @@ function Index() {
   const halfwayTracked = useRef(false);
 
   // Rastreia page_view uma vez
-  useEffect(() => { track("1_page_view"); }, []);
+  useEffect(() => { captureUtms(); track("1_page_view"); }, []);
 
   const questions: QuizItem[] = useMemo(() => {
     if (!flow) return introQuestions;
