@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getStats, STEPS } from "@/lib/analytics";
+import { getStats } from "@/lib/analytics";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Quiz Analytics" }, { name: "robots", content: "noindex" }] }),
@@ -20,42 +20,92 @@ function Bar({ pct }: { pct: number }) {
 }
 
 function Dashboard() {
-  const { steps, total } = Route.useLoaderData();
+  const data = Route.useLoaderData();
+  const steps = data.steps ?? [];
+  const total = data.total ?? 0;
+  const sites = (data as any).sites ?? [];
 
-  const checkoutStep = steps.find(s => s.key === "8_checkout_click");
-  const leadStep = steps.find(s => s.key === "6_lead_submit");
+  const checkoutStep = steps.find((s: any) => s.key === "8_checkout_click");
+  const leadStep = steps.find((s: any) => s.key === "6_lead_submit");
+
+  const SITE_COLORS: Record<string, string> = {
+    lp01: "#6366f1",
+    lp2:  "#f59e0b",
+    quiz: "#22c55e",
+  };
+
+  const best = sites.length > 0
+    ? sites.reduce((a: any, b: any) => (b.ctr > a.ctr ? b : a), sites[0])
+    : null;
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto space-y-8">
 
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard do Quiz</h1>
-          <p className="text-gray-500 mt-1">Funil de conversão — total de sessões: <strong>{total.toLocaleString("pt-BR")}</strong></p>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard Analytics</h1>
+          <p className="text-gray-500 mt-1">Pierry Rodrigues</p>
         </div>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        {/* Comparativo CTR */}
+        {sites.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <h2 className="font-semibold text-gray-700">Taxa de clique no checkout (CTR)</h2>
+              {best && sites.some((s: any) => s.views > 0) && (
+                <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-1 rounded-full">
+                  Melhor: {best.name}
+                </span>
+              )}
+            </div>
+            <div className="divide-y">
+              {sites.map((s: any) => (
+                <div key={s.id} className="px-6 py-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ background: SITE_COLORS[s.id] ?? "#888" }} />
+                        <span className="font-semibold text-gray-800">{s.name}</span>
+                        {best && s.id === best.id && s.views > 0 && (
+                          <span className="text-xs bg-green-100 text-green-600 font-bold px-1.5 py-0.5 rounded">Melhor</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-400 ml-4">{s.url}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold" style={{ color: SITE_COLORS[s.id] ?? "#888" }}>{s.ctr}%</span>
+                      <div className="text-xs text-gray-400">{s.clicks} cliques / {s.views} visitas</div>
+                    </div>
+                  </div>
+                  <Bar pct={s.ctr} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* KPIs do quiz */}
+        <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl p-5 shadow-sm border text-center">
             <div className="text-3xl font-bold text-green-500">{leadStep?.pct ?? 0}%</div>
             <div className="text-sm text-gray-500 mt-1">Enviaram lead</div>
-            <div className="text-xs text-gray-400">{leadStep?.count.toLocaleString("pt-BR")} pessoas</div>
+            <div className="text-xs text-gray-400">{leadStep?.count?.toLocaleString("pt-BR") ?? 0} pessoas</div>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border text-center">
             <div className="text-3xl font-bold text-violet-500">{checkoutStep?.pct ?? 0}%</div>
             <div className="text-sm text-gray-500 mt-1">Clicaram no checkout</div>
-            <div className="text-xs text-gray-400">{checkoutStep?.count.toLocaleString("pt-BR")} pessoas</div>
+            <div className="text-xs text-gray-400">{checkoutStep?.count?.toLocaleString("pt-BR") ?? 0} pessoas</div>
           </div>
         </div>
 
-        {/* Funil por etapa */}
+        {/* Funil do quiz */}
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-          <div className="px-6 py-4 border-b">
-            <h2 className="font-semibold text-gray-700">Etapas do funil</h2>
+          <div className="px-6 py-4 border-b flex items-center justify-between">
+            <h2 className="font-semibold text-gray-700">Funil do Quiz</h2>
+            <span className="text-xs text-gray-400">{total.toLocaleString("pt-BR")} sessões</span>
           </div>
           <div className="divide-y">
-            {steps.map((s, i) => (
+            {steps.map((s: any, i: number) => (
               <div key={s.key} className="px-6 py-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -64,13 +114,13 @@ function Dashboard() {
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-bold text-gray-900">{s.pct}%</span>
-                    <span className="text-xs text-gray-400 ml-2">({s.count.toLocaleString("pt-BR")})</span>
+                    <span className="text-xs text-gray-400 ml-2">({s.count?.toLocaleString("pt-BR")})</span>
                   </div>
                 </div>
                 <Bar pct={s.pct} />
-                {i > 0 && steps[i - 1].count > 0 && (
+                {i > 0 && steps[i - 1]?.count > 0 && (
                   <p className="text-xs text-gray-400 mt-1">
-                    ↓ {Math.round((s.count / steps[i - 1].count) * 100)}% dos que passaram pela etapa anterior
+                    ↓ {Math.round((s.count / steps[i - 1].count) * 100)}% da etapa anterior
                   </p>
                 )}
               </div>
