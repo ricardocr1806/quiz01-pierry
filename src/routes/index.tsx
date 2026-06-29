@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { introQuestions, flow1Questions, flow2Questions, type Option, type QuizItem } from "@/lib/quiz-data";
@@ -11,6 +11,7 @@ import { ResultScreen } from "@/components/quiz/ResultScreen";
 import { IntroScreen } from "@/components/quiz/IntroScreen";
 import { LeadForm, type Lead } from "@/components/quiz/LeadForm";
 import { PostResultFlow } from "@/components/quiz/PostResultFlow";
+import { trackStep } from "@/lib/analytics";
 
 
 export const Route = createFileRoute("/")({
@@ -35,15 +36,21 @@ export const Route = createFileRoute("/")({
 
 type Phase = "intro" | "questions" | "loading" | "result" | "lead" | "post";
 
+function track(step: string) {
+  trackStep({ data: { step } }).catch(() => {});
+}
+
 function Index() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [flow, setFlow] = useState<"flow1" | "flow2" | null>(null);
-  const [step, setStep] = useState(0); // index into combined question list
+  const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [lead, setLead] = useState<Lead | null>(null);
+  const halfwayTracked = useRef(false);
 
+  // Rastreia page_view uma vez
+  useEffect(() => { track("1_page_view"); }, []);
 
-  // Build the active question list based on routing choice
   const questions: QuizItem[] = useMemo(() => {
     if (!flow) return introQuestions;
     return [...introQuestions, ...(flow === "flow1" ? flow1Questions : flow2Questions)];
@@ -53,16 +60,32 @@ function Index() {
   const total = (flow ? (flow === "flow1" ? flow1Questions.length : flow2Questions.length) : flow2Questions.length) + introQuestions.length;
   const progress = phase === "questions" ? Math.round((step / total) * 100) : 0;
 
+  // Rastreia 50% das perguntas
+  useEffect(() => {
+    if (phase === "questions" && progress >= 50 && !halfwayTracked.current) {
+      halfwayTracked.current = true;
+      track("3_halfway");
+    }
+  }, [phase, progress]);
+
+  // Rastreia mudanças de fase
+  useEffect(() => {
+    if (phase === "loading")  track("4_questions_done");
+    if (phase === "lead")     track("5_lead_view");
+    if (phase === "result")   track("7_result_view");
+  }, [phase]);
+
   function reset() {
     setPhase("intro");
     setFlow(null);
     setStep(0);
     setAnswers({});
     setLead(null);
+    halfwayTracked.current = false;
   }
 
-
   function handleStart() {
+    track("2_quiz_started");
     setPhase("questions");
     setStep(0);
   }
@@ -71,7 +94,6 @@ function Index() {
     if (!current) return;
     setAnswers((a) => ({ ...a, [current.id]: opt.label }));
 
-    // Branching at relation question
     if (current.id === "relation" && opt.next) {
       setFlow(opt.next);
       setStep((s) => s + 1);
