@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { sendLead } from "@/lib/lead-webhook";
+import { trackStep } from "@/lib/analytics";
 
 export type Lead = { name: string; email: string; whatsapp: string };
 
@@ -68,6 +69,7 @@ export function LeadForm({ flow, onSubmit }: Props) {
           if (valid) {
             const lead = { name: name.trim(), email: email.trim(), whatsapp: whatsapp.trim() };
             sendLead({ data: { name: lead.name, email: lead.email, phone: lead.whatsapp, flow: flow ?? "flow2" } }).catch(() => {});
+            trackStep({ data: { step: "6_lead_submit" } }).catch(() => {});
             fbq("track", "Lead", { content_name: "Quiz — Mapa da Identidade Homossexual" });
             onSubmit(lead);
           }
