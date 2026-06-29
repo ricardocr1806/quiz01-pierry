@@ -55,5 +55,25 @@ export const getStats = createServerFn({ method: "GET" })
       count: counts[i],
       pct: total > 0 ? Math.round((counts[i] / total) * 100) : 0,
     }));
-    return { steps, total };
+
+    // Comparativo entre os 3 sites
+    const [lp01Views, lp01Clicks, lp2Views, lp2Clicks] = await Promise.all([
+      kvGet("lp01_page_view"),
+      kvGet("lp01_checkout_click"),
+      kvGet("lp2_page_view"),
+      kvGet("lp2_checkout_click"),
+    ]);
+    const quizViews  = counts[0];
+    const quizClicks = counts[7]; // 8_checkout_click
+
+    const sites = [
+      { id: "lp01", name: "LP 01 — Imersão", url: "lp01.pierryrodrigues.com.br", views: lp01Views, clicks: lp01Clicks },
+      { id: "lp2",  name: "LP 2 — Pais",     url: "lp2.pierryrodrigues.com.br",  views: lp2Views,  clicks: lp2Clicks  },
+      { id: "quiz", name: "Quiz",             url: "quiz.pierryrodrigues.com.br", views: quizViews, clicks: quizClicks },
+    ].map(s => ({
+      ...s,
+      ctr: s.views > 0 ? Math.round((s.clicks / s.views) * 100) : 0,
+    }));
+
+    return { steps, total, sites };
   });
